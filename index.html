@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon181.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon180.png">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="RDS11">
+    <meta name="apple-mobile-web-app-title" content="RDS10">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Улучшенный Рапидо Старт с LSTM</title>
     <!-- Загрузка TensorFlow.js -->
@@ -542,6 +542,12 @@
         .dark-mode .info-box {
             background: rgba(10, 132, 255, 0.1);
         }
+        .no-data-message {
+            text-align: center;
+            padding: 20px;
+            color: var(--secondary-color);
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -693,6 +699,9 @@
         applyTheme(!dark);
         updateCharts();
         renderHeatmap();
+        if (document.getElementById('predictionsTab').classList.contains('active')) {
+            renderPredictionsChart();
+        }
     };
     applyTheme(localStorage.getItem('darkMode') === 'true');
 
@@ -870,6 +879,9 @@
             updateWinStats();
             updateCharts();
             renderHeatmap();
+            if (document.getElementById('predictionsTab').classList.contains('active')) {
+                renderPredictionsChart();
+            }
         }
     });
     
@@ -896,6 +908,9 @@
             generateNumbers();
             updateCharts();
             renderHeatmap();
+            if (document.getElementById('predictionsTab').classList.contains('active')) {
+                renderPredictionsChart();
+            }
         }
     };
 
@@ -1006,6 +1021,9 @@
         updateWinStats();
         updateCharts();
         renderHeatmap();
+        if (document.getElementById('predictionsTab').classList.contains('active')) {
+            renderPredictionsChart();
+        }
         
         // Очищаем поля ввода
         document.getElementById('drawId').value = '';
@@ -1920,17 +1938,10 @@
                 }
             }
             
-            return { 
-                nums1, 
-                num2: field2Num,
-                field1Probs: normalizedProbs1 // Возвращаем вероятности для визуализации
-            };
+            return { nums1, num2: field2Num };
         } catch (e) {
             console.error('Ошибка генерации LSTM:', e);
-            return {
-                ...generateColdNumbers(),
-                field1Probs: Array(20).fill(0.05)
-            };
+            return generateColdNumbers();
         }
     }
     
@@ -1989,11 +2000,31 @@
     function updateCharts() {
         const efficiencyCtx = document.getElementById('efficiencyChart').getContext('2d');
         
-        // Уничтожаем старый график только если он существует
+        // Уничтожаем старый график
         if (window.efficiencyChart) {
             window.efficiencyChart.destroy();
         }
-
+        
+        // Проверяем наличие данных
+        let hasData = false;
+        for (const method in winStats) {
+            if (winStats[method].bets > 0) {
+                hasData = true;
+                break;
+            }
+        }
+        
+        if (!hasData) {
+            // Создаем сообщение вместо графика
+            efficiencyCtx.font = "16px Arial";
+            efficiencyCtx.fillStyle = "var(--secondary-color)";
+            efficiencyCtx.textAlign = "center";
+            efficiencyCtx.fillText("Недостаточно данных для анализа эффективности", 
+                                  efficiencyCtx.canvas.width / 2, 
+                                  efficiencyCtx.canvas.height / 2);
+            return;
+        }
+        
         // Собираем данные для графика
         const methods = ['cold', 'ogneva', 'karnaugh', 'uniform', 'lstm', 'hybrid'];
         const methodNames = methods.map(m => {
@@ -2004,20 +2035,19 @@
                 case 'uniform': return 'Равномерный';
                 case 'lstm': return 'LSTM';
                 case 'hybrid': return 'Гибридный';
-                default: return m;
             }
         });
-
+        
         const roiData = methods.map(m => {
-            const stats = winStats[m] || {};
+            const stats = winStats[m];
             return stats.spent > 0 ? Math.round((stats.won / stats.spent) * 100) : 0;
         });
-
+        
         const winRateData = methods.map(m => {
-            const stats = winStats[m] || {};
+            const stats = winStats[m];
             return stats.bets > 0 ? Math.round((stats.wins / stats.bets) * 100) : 0;
         });
-
+        
         // Создаем новый график
         window.efficiencyChart = new Chart(efficiencyCtx, {
             type: 'bar',
@@ -2063,77 +2093,114 @@
                 }
             }
         });
-
-        // Инициализация графика прогнозов
-        const predictionCtx = document.getElementById('predictionChart').getContext('2d');
+    }
+    
+    // Функция для построения графика прогнозов
+    async function renderPredictionsChart() {
+        const ctx = document.getElementById('predictionChart').getContext('2d');
         
-        // Уничтожаем старый график если существует
+        // Уничтожаем предыдущий график
         if (window.predictionChart) {
             window.predictionChart.destroy();
         }
         
-        // Создаем новый график прогнозов
-        window.predictionChart = new Chart(predictionCtx, {
-            type: 'line',
-            data: {
-                labels: Array.from({length: 20}, (_, i) => i + 1),
-                datasets: [{
-                    label: 'Вероятность выпадения',
-                    data: Array(20).fill(0.05),
-                    borderColor: 'rgba(0, 188, 212, 1)',
-                    backgroundColor: 'rgba(0, 188, 212, 0.1)',
-                    fill: true,
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        min: 0,
-                        max: 0.2,
-                        title: {
-                            display: true,
-                            text: 'Вероятность'
+        // Проверяем условия для построения прогноза
+        if (history.length < 10 || !lstmModel) {
+            // Создаем сообщение вместо графика
+            ctx.font = "16px Arial";
+            ctx.fillStyle = "var(--secondary-color)";
+            ctx.textAlign = "center";
+            ctx.fillText("Недостаточно данных для прогноза (минимум 10 тиражей)", 
+                        ctx.canvas.width / 2, 
+                        ctx.canvas.height / 2);
+            return;
+        }
+
+        try {
+            // Создаем последовательность из последних 10 тиражей
+            const sequence = [];
+            
+            for (let i = history.length - 10; i < history.length; i++) {
+                const draw = history[i];
+                const vector = Array(24).fill(0);
+                
+                draw.field1.forEach(num => {
+                    if (num >= 1 && num <= 20) vector[num-1] = 1;
+                });
+                
+                if (draw.field2 >= 1 && draw.field2 <= 4) {
+                    vector[20 + draw.field2 - 1] = 1;
+                }
+                
+                sequence.push(vector);
+            }
+            
+            // Преобразуем в тензор
+            const input = tf.tensor3d([sequence]);
+            
+            // Получаем предсказание
+            const prediction = lstmModel.predict(input);
+            const values = await prediction.data();
+            
+            // Освобождаем память
+            prediction.dispose();
+            input.dispose();
+            
+            // Нормализуем вероятности для поля 1
+            const field1Probs = values.slice(0, 20);
+            const sum1 = field1Probs.reduce((a, b) => a + b, 0);
+            const normalizedProbs1 = sum1 > 0 ? 
+                field1Probs.map(p => p / sum1) : 
+                Array(20).fill(1/20);
+            
+            // Создаем график для поля 1
+            window.predictionChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Array.from({length: 20}, (_, i) => i+1),
+                    datasets: [{
+                        label: 'Вероятность выпадения',
+                        data: normalizedProbs1,
+                        backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Вероятность'
+                            }
                         }
                     },
-                    x: {
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
                         title: {
                             display: true,
-                            text: 'Число'
+                            text: 'Прогноз вероятности выпадения чисел (поле 1)'
                         }
                     }
-                },
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Прогноз вероятности выпадения чисел'
-                    }
                 }
-            }
-        });
-
-        // Обновляем данные прогнозов, если модель доступна
-        if (lstmModel && history.length >= 10) {
-            updatePredictions();
+            });
+        } catch (e) {
+            console.error('Ошибка при построении прогноза:', e);
+            // Создаем сообщение об ошибке
+            ctx.font = "16px Arial";
+            ctx.fillStyle = "var(--secondary-color)";
+            ctx.textAlign = "center";
+            ctx.fillText("Ошибка при построении прогноза", 
+                        ctx.canvas.width / 2, 
+                        ctx.canvas.height / 2);
         }
     }
     
-    // Обновление прогнозов
-    async function updatePredictions() {
-        try {
-            // Генерируем LSTM числа, чтобы получить вероятности
-            const lstmNumbers = await generateLSTMNumbers();
-            
-            // Обновляем данные графика
-            window.predictionChart.data.datasets[0].data = lstmNumbers.field1Probs;
-            window.predictionChart.update();
-        } catch (e) {
-            console.error('Ошибка обновления прогнозов:', e);
-        }
-    }
-
     // --- Переключение вкладок ---
     document.querySelectorAll('.tab').forEach(tab => {
         tab.addEventListener('click', () => {
@@ -2147,9 +2214,11 @@
             tab.classList.add('active');
             document.getElementById(`${tabId}Tab`).classList.add('active');
             
-            // Если активирована вкладка прогнозов, обновляем график
-            if (tabId === 'predictions') {
-                updatePredictions();
+            // Обновляем графики при переключении вкладок
+            if (tabId === 'efficiency') {
+                updateCharts();
+            } else if (tabId === 'predictions') {
+                renderPredictionsChart();
             }
         });
     });
@@ -2174,6 +2243,11 @@
         // Инициализируем визуализации
         renderHeatmap();
         updateCharts();
+        
+        // Если активна вкладка прогнозов, строим график
+        if (document.querySelector('.tab.active').dataset.tab === 'predictions') {
+            setTimeout(renderPredictionsChart, 500);
+        }
     });
 </script>
 </body>
