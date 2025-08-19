@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon181.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon180.png">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="RDS11">
+    <meta name="apple-mobile-web-app-title" content="RDS10">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Улучшенный Рапидо Старт с LSTM</title>
     <!-- Загрузка TensorFlow.js -->
@@ -548,6 +548,16 @@
             color: var(--secondary-color);
             font-weight: bold;
         }
+        .prediction-info {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(0, 188, 212, 0.1);
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .dark-mode .prediction-info {
+            background: rgba(0, 188, 212, 0.2);
+        }
     </style>
 </head>
 <body>
@@ -556,7 +566,7 @@
     <div class="container">
         <div class="card">
             <h1>Улучшенный Рапидо Старт с LSTM</h1>
-            <p class="subtitle">Гибридный анализ с нейросетевым прогнозированием</p>
+            <p class="subtitle">Гибридный анализ с нейросетевым прогнозирова</p>
         </div>
         
         <div class="card">
@@ -643,6 +653,9 @@
             </div>
             
             <div class="tab-content" id="predictionsTab">
+                <div id="predictionInfo" class="prediction-info">
+                    Прогноз строится на основе LSTM-модели, обученной на исторических данных. Для построения прогноза необходимо как минимум 10 тиражей в истории.
+                </div>
                 <canvas id="predictionChart" class="chart-container"></canvas>
                 <div class="info-box">
                     Прогноз вероятности выпадения чисел в следующем тираже на основе LSTM модели.
@@ -1174,7 +1187,7 @@
                 // Отображаем числа
                 displayNumbers(generatedNumbers.nums1, generatedNumbers.num2, currentMethod);
                 
-                // Увеличиваем счетчик ставок
+                // Увеличиваем счетчик ставки
                 if(winStats[currentMethod]) {
                     winStats[currentMethod].bets++;
                     winStats[currentMethod].spent += 100;
@@ -1208,7 +1221,7 @@
                 // Отображаем числа
                 displayNumbers(generatedNumbers.nums1, generatedNumbers.num2, currentMethod);
                 
-                // Увеличиваем счетчик ставок
+                // Увеличиваем счетчик ставки
                 if(winStats[currentMethod]) {
                     winStats[currentMethod].bets++;
                     winStats[currentMethod].spent += 100;
@@ -1255,7 +1268,7 @@
         // Отображаем числа
         displayNumbers(generatedNumbers.nums1, generatedNumbers.num2, currentMethod);
         
-        // Увеличиваем счетчик ставок
+        // Увеличиваем счетчик ставки
         if(winStats[currentMethod]) {
             winStats[currentMethod].bets++;
             winStats[currentMethod].spent += 100;
@@ -1441,7 +1454,7 @@
             // Сортируем по частоте выпадения (от наименьшей)
             groupNumbers.sort((a, b) => countField1[a - 1] - countField1[b - 1]);
 
-            // Выбираем 2 самых редких числа в группе
+            // Выбираем 2 самых редких числа в групе
             selected1.push(groupNumbers[0], groupNumbers[1]);
         });
 
@@ -1629,7 +1642,7 @@
             kernelInitializer: 'heNormal'
         }));
         
-        // Выходной слой
+        // Выходный слой
         lstmModel.add(tf.layers.dense({
             units: 24,
             activation: 'sigmoid'
@@ -1754,6 +1767,11 @@
             
             modelAccuracy.textContent = `${accuracy}%`;
             trainingMessage.textContent = 'Обучение завершено!';
+            
+            // Обновляем прогнозы, если активна соответствующая вкладка
+            if (document.getElementById('predictionsTab').classList.contains('active')) {
+                renderPredictionsChart();
+            }
         } catch (e) {
             console.error('Ошибка обучения:', e);
             trainingMessage.textContent = 'Ошибка обучения: ' + e.message;
@@ -1834,6 +1852,11 @@
             localStorage.setItem('lstmModelInfo', JSON.stringify(modelInfo));
             
             console.log('Модель обновлена онлайн');
+            
+            // Обновляем прогнозы, если активна соответствующая вкладка
+            if (document.getElementById('predictionsTab').classList.contains('active')) {
+                renderPredictionsChart();
+            }
         } catch (e) {
             console.error('Ошибка онлайн-обучения:', e);
         }
@@ -2104,15 +2127,27 @@
             window.predictionChart.destroy();
         }
         
+        // Очищаем canvas
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        
         // Проверяем условия для построения прогноза
-        if (history.length < 10 || !lstmModel) {
-            // Создаем сообщение вместо графика
+        if (history.length < 10) {
+            // Создаем сообщение о недостатке данных
             ctx.font = "16px Arial";
             ctx.fillStyle = "var(--secondary-color)";
             ctx.textAlign = "center";
-            ctx.fillText("Недостаточно данных для прогноза (минимум 10 тиражей)", 
-                        ctx.canvas.width / 2, 
-                        ctx.canvas.height / 2);
+            ctx.fillText("Недостаточно данных для прогноза", ctx.canvas.width / 2, ctx.canvas.height / 2 - 15);
+            ctx.fillText(`Нужно как минимум 10 тиражей (сейчас: ${history.length})`, ctx.canvas.width / 2, ctx.canvas.height / 2 + 15);
+            return;
+        }
+
+        if (!lstmModel) {
+            // Создаем сообщение об отсутствии модели
+            ctx.font = "16px Arial";
+            ctx.fillStyle = "var(--secondary-color)";
+            ctx.textAlign = "center";
+            ctx.fillText("LSTM-модель не обучена", ctx.canvas.width / 2, ctx.canvas.height / 2 - 15);
+            ctx.fillText("Нажмите 'Обучить модель' для обучения", ctx.canvas.width / 2, ctx.canvas.height / 2 + 15);
             return;
         }
 
@@ -2147,7 +2182,7 @@
             input.dispose();
             
             // Нормализуем вероятности для поля 1
-            const field1Probs = values.slice(0, 20);
+            const field1Probs = Array.from(values.slice(0, 20));
             const sum1 = field1Probs.reduce((a, b) => a + b, 0);
             const normalizedProbs1 = sum1 > 0 ? 
                 field1Probs.map(p => p / sum1) : 
@@ -2172,6 +2207,7 @@
                     scales: {
                         y: {
                             beginAtZero: true,
+                            max: 0.2, // Ограничиваем масштаб для лучшей визуализации
                             title: {
                                 display: true,
                                 text: 'Вероятность'
@@ -2185,6 +2221,13 @@
                         title: {
                             display: true,
                             text: 'Прогноз вероятности выпадения чисел (поле 1)'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Вероятность: ${(context.raw * 100).toFixed(2)}%`;
+                                }
+                            }
                         }
                     }
                 }
@@ -2195,9 +2238,8 @@
             ctx.font = "16px Arial";
             ctx.fillStyle = "var(--secondary-color)";
             ctx.textAlign = "center";
-            ctx.fillText("Ошибка при построении прогноза", 
-                        ctx.canvas.width / 2, 
-                        ctx.canvas.height / 2);
+            ctx.fillText("Ошибка при построении прогноза", ctx.canvas.width / 2, ctx.canvas.height / 2 - 15);
+            ctx.fillText(e.message, ctx.canvas.width / 2, ctx.canvas.height / 2 + 15);
         }
     }
     
@@ -2216,9 +2258,9 @@
             
             // Обновляем графики при переключении вкладок
             if (tabId === 'efficiency') {
-                updateCharts();
+                setTimeout(updateCharts, 50); // Небольшая задержка для гарантированной отрисовки
             } else if (tabId === 'predictions') {
-                renderPredictionsChart();
+                setTimeout(renderPredictionsChart, 50); // Небольшая задержка для гарантированной отрисовки
             }
         });
     });
