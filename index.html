@@ -3,17 +3,10 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon181.png">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="RDS11">
-    <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Улучшенный Рапидо Старт с LSTM</title>
-    <!-- Загрузка TensorFlow.js -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js"></script>
-    <!-- Загрузка Chart.js для визуализации -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* Обновленные стили с новыми элементами */
         :root {
             --bg-color: #f5f5f7;
             --text-color: #1c1c1e;
@@ -102,11 +95,6 @@
             font-size: 1.2rem;
             margin-bottom: 8px;
         }
-        h3 {
-            color: var(--primary-color);
-            font-size: 1rem;
-            margin: 10px 0 5px;
-        }
         .numbers {
             display: flex;
             flex-wrap: wrap;
@@ -163,27 +151,15 @@
             background: var(--keyboard-bg);
             color: var(--text-color);
         }
-        #fakeInput {
-            position: absolute;
-            opacity: 0;
-            height: 0;
-            width: 0;
-        }
-        #inputDisplay {
+        .input-field {
             width: 100%;
-            min-height: 70px;
+            padding: 8px;
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            padding: 8px;
-            margin-bottom: 8px;
-            font-size: 15px;
             background: var(--card-bg);
-            word-wrap: break-word;
             color: var(--text-color);
-        }
-        .input-active {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 2px rgba(0,102,204,0.2);
+            font-size: 15px;
+            margin-bottom: 5px;
         }
         .stats-table {
             width: 100%;
@@ -259,15 +235,12 @@
         .keyboard-key:active {
             background: var(--history-border);
         }
-        .keyboard-key.wide {
-            flex: 2;
+        .keyboard-key.red {
+            background: var(--secondary-color);
+            color: white;
         }
         .keyboard-key.blue {
             background: var(--primary-color);
-            color: white;
-        }
-        .keyboard-key.red {
-            background: var(--secondary-color);
             color: white;
         }
         .theme-toggle {
@@ -312,19 +285,6 @@
         .method-btn.active {
             background: var(--primary-color);
             color: white;
-        }
-        .info-icon {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border-radius: 8px;
-            background: var(--primary-color);
-            color: white;
-            text-align: center;
-            line-height: 16px;
-            font-size: 12px;
-            margin-left: 5px;
-            cursor: help;
         }
         .win-stats {
             display: flex;
@@ -393,55 +353,6 @@
             display: block;
             margin-bottom: 5px;
             font-size: 0.9rem;
-        }
-        .draw-input input {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background: var(--card-bg);
-            color: var(--text-color);
-        }
-        .input-field {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background: var(--card-bg);
-            color: var(--text-color);
-            font-size: 15px;
-            margin-bottom: 5px;
-        }
-        .input-field:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 2px rgba(0,102,204,0.2);
-            outline: none;
-        }
-        .keyboard-key.disabled {
-            opacity: 0.5;
-            pointer-events: none;
-        }
-        .keyboard-container {
-            max-width: 500px;
-            margin: 0 auto;
-        }
-        .prize-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-            font-size: 12px;
-        }
-        .prize-table th, .prize-table td {
-            padding: 8px;
-            text-align: center;
-            border: 1px solid var(--border-color);
-        }
-        .prize-table th {
-            background-color: rgba(0,102,204,0.1);
-        }
-        .jackpot {
-            background-color: rgba(255,215,0,0.2);
-            font-weight: bold;
         }
         .training-status {
             padding: 8px;
@@ -542,12 +453,6 @@
         .dark-mode .info-box {
             background: rgba(10, 132, 255, 0.1);
         }
-        .no-data-message {
-            text-align: center;
-            padding: 20px;
-            color: var(--secondary-color);
-            font-weight: bold;
-        }
         .prediction-info {
             margin-top: 10px;
             padding: 10px;
@@ -566,7 +471,7 @@
     <div class="container">
         <div class="card">
             <h1>Улучшенный Рапидо Старт с LSTM</h1>
-            <p class="subtitle">Гибридный анализ с нейросетевым прогнозирова</p>
+            <p class="subtitle">Гибридный анализ с нейросетевым прогнозированием</p>
         </div>
         
         <div class="card">
@@ -602,15 +507,15 @@
             <div class="draw-inputs">
                 <div class="draw-input">
                     <label>Тираж</label>
-                    <input type="text" id="drawId" class="input-field" placeholder="Номер тиража" readonly>
+                    <input type="text" id="drawId" class="input-field" placeholder="Номер тиража">
                 </div>
                 <div class="draw-input">
                     <label>Поле 1 (8 чисел)</label>
-                    <input type="text" id="drawField1" class="input-field" placeholder="1,2,3,4,5,6,7,8" readonly>
+                    <input type="text" id="drawField1" class="input-field" placeholder="1,2,3,4,5,6,7,8">
                 </div>
                 <div class="draw-input">
                     <label>Поле 2 (1 число)</label>
-                    <input type="text" id="drawField2" class="input-field" placeholder="1" readonly>
+                    <input type="text" id="drawField2" class="input-field" placeholder="1">
                 </div>
             </div>
             <div id="validationError" class="validation-error"></div>
@@ -672,26 +577,24 @@
 
     <!-- Кастомная клавиатура -->
     <div class="custom-keyboard" id="customKeyboard">
-        <div class="keyboard-container">
-            <div class="keyboard-row">
-                <div class="keyboard-key" data-key="1">1</div>
-                <div class="keyboard-key" data-key="2">2</div>
-                <div class="keyboard-key" data-key="3">3</div>
-                <div class="keyboard-key" data-key="4">4</div>
-                <div class="keyboard-key" data-key="5">5</div>
-            </div>
-            <div class="keyboard-row">
-                <div class="keyboard-key" data-key="6">6</div>
-                <div class="keyboard-key" data-key="7">7</div>
-                <div class="keyboard-key" data-key="8">8</div>
-                <div class="keyboard-key" data-key="9">9</div>
-                <div class="keyboard-key" data-key="0">0</div>
-            </div>
-            <div class="keyboard-row">
-                <div class="keyboard-key" data-key=",">,</div>
-                <div class="keyboard-key red" data-key="backspace">⌫</div>
-                <div class="keyboard-key blue" data-key="done">Готово</div>
-            </div>
+        <div class="keyboard-row">
+            <div class="keyboard-key" data-key="1">1</div>
+            <div class="keyboard-key" data-key="2">2</div>
+            <div class="keyboard-key" data-key="3">3</div>
+            <div class="keyboard-key" data-key="4">4</div>
+            <div class="keyboard-key" data-key="5">5</div>
+        </div>
+        <div class="keyboard-row">
+            <div class="keyboard-key" data-key="6">6</div>
+            <div class="keyboard-key" data-key="7">7</div>
+            <div class="keyboard-key" data-key="8">8</div>
+            <div class="keyboard-key" data-key="9">9</div>
+            <div class="keyboard-key" data-key="0">0</div>
+        </div>
+        <div class="keyboard-row">
+            <div class="keyboard-key" data-key=",">,</div>
+            <div class="keyboard-key red" data-key="backspace">⌫</div>
+            <div class="keyboard-key blue" data-key="done">Готово</div>
         </div>
     </div>
 
@@ -2137,7 +2040,7 @@
             ctx.fillStyle = "var(--secondary-color)";
             ctx.textAlign = "center";
             ctx.fillText("Недостаточно данных для прогноза", ctx.canvas.width / 2, ctx.canvas.height / 2 - 15);
-            ctx.fillText(`Нужно как минимум 10 тиражей (сейчас: ${history.length})`, ctx.canvas.width / 2, ctx.canvas.height / 2 + 15);
+            ctx.fillText(`Нужно как минимум 10 тиражей (сейчас: ${history.length})`, ctx.cancanvas.width / 2, ctx.canvas.height / 2 + 15);
             return;
         }
 
