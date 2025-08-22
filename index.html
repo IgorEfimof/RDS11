@@ -164,6 +164,12 @@
             color: var(--text-color);
             font-size: 15px;
             margin-bottom: 5px;
+            -webkit-user-select: none;
+            user-select: none;
+            cursor: pointer;
+        }
+        .input-field:focus {
+            outline: none;
         }
         .stats-table {
             width: 100%;
@@ -511,15 +517,15 @@
             <div class="draw-inputs">
                 <div class="draw-input">
                     <label>Тираж</label>
-                    <input type="text" id="drawId" class="input-field" placeholder="Номер тиража">
+                    <input type="text" id="drawId" class="input-field" placeholder="Номер тиража" readonly>
                 </div>
                 <div class="draw-input">
                     <label>Поле 1 (8 чисел)</label>
-                    <input type="text" id="drawField1" class="input-field" placeholder="1,2,3,4,5,6,7,8">
+                    <input type="text" id="drawField1" class="input-field" placeholder="1,2,3,4,5,6,7,8" readonly>
                 </div>
                 <div class="draw-input">
                     <label>Поле 2 (1 число)</label>
-                    <input type="text" id="drawField2" class="input-field" placeholder="1">
+                    <input type="text" id="drawField2" class="input-field" placeholder="1" readonly>
                 </div>
             </div>
             <div id="validationError" class="validation-error"></div>
@@ -732,9 +738,14 @@
     }
 
     // Обработчики для полей ввода
-    document.getElementById('drawId').addEventListener('focus', () => showKeyboard(document.getElementById('drawId')));
-    document.getElementById('drawField1').addEventListener('focus', () => showKeyboard(document.getElementById('drawField1')));
-    document.getElementById('drawField2').addEventListener('focus', () => showKeyboard(document.getElementById('drawField2')));
+    const drawIdInput = document.getElementById('drawId');
+    const drawField1Input = document.getElementById('drawField1');
+    const drawField2Input = document.getElementById('drawField2');
+    
+    // Для всех устройств используем обработку клика для отображения кастомной клавиатуры
+    [drawIdInput, drawField1Input, drawField2Input].forEach(input => {
+        input.addEventListener('click', () => showKeyboard(input));
+    });
 
     document.addEventListener('click', (e) => {
         if (!currentInput) return;
@@ -1559,7 +1570,7 @@
         lstmModel.compile({
             optimizer: tf.train.adam(0.0005),
             loss: 'binaryCrossentropy',
-            metrics: ['accuracy']
+            metrics: ['accuracy'
         });
     }
     
@@ -1578,7 +1589,7 @@
         for (let i = sequenceLength; i < history.length; i++) {
             const sequence = [];
             
-            // Формируем последовательность из 10 предыдущих тиражей
+            // Формируем последовательность из 10 предыдуных тиражей
             for (let j = i - sequenceLength; j < i; j++) {
                 const draw = history[j];
                 const vector = Array(24).fill(0);
@@ -1882,7 +1893,7 @@
         const heatmapGrid = document.getElementById('heatmapGrid');
         heatmapGrid.innerHTML = '';
         
-        // Создаем матрицу совместной встречаемости
+        // Созраем матрицу совместной встречаемости
         const cooccurrence = Array(20).fill().map(() => Array(20).fill(0));
         
         history.forEach(entry => {
@@ -1901,7 +1912,7 @@
             }
         }
         
-        // Создаем ячейки тепловой карты
+        // Создаем ячейки тепловой карта
         for (let i = 0; i < 20; i++) {
             for (let j = 0; j < 20; j++) {
                 const cell = document.createElement('div');
@@ -2044,7 +2055,7 @@
             ctx.fillStyle = "var(--secondary-color)";
             ctx.textAlign = "center";
             ctx.fillText("Недостаточно данных для прогноза", ctx.canvas.width / 2, ctx.canvas.height / 2 - 15);
-            ctx.fillText(`Нужно как минимум 10 тиражей (сейчас: ${history.length})`, ctx.cancanvas.width / 2, ctx.canvas.height / 2 + 15);
+            ctx.fillText(`Нужно как минимум 10 тиражей (сейчас: ${history.length})`, ctx.canvas.width / 2, ctx.canvas.height / 2 + 15);
             return;
         }
 
